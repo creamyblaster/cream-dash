@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Mini Geometry Dash</title>
+  <style>
+    body {
+      margin: 0;
+      background: #111;
+    }
+    canvas {
+      display: block;
+      margin: 0 auto;
+      background: #222;
+      border: 2px solid #fff;
+    }
+  </style>
+</head>
+<body>
+<canvas id="gameCanvas" width="800" height="400"></canvas>
+
+<script>
+  const canvas = document.getElementById('gameCanvas');
+  const ctx = canvas.getContext('2d');
+
+  const gravity = 0.5;
+  const jumpStrength = -10;
+  let isGameOver = false;
+
+  const player = {
+    x: 100,
+    y: 300,
+    width: 30,
+    height: 30,
+    velocityY: 0,
+    onGround: false,
+    color: "#0ff"
+  };
+
+  const obstacles = [];
+
+  function createObstacle() {
+    const height = 40 + Math.random() * 40;
+    obstacles.push({
+      x: canvas.width,
+      y: canvas.height - height,
+      width: 20,
+      height: height,
+      color: "#f00"
+    });
+  }
+
+  let obstacleTimer = 0;
+
+  function update() {
+    if (isGameOver) return;
+
+    // Gravity and movement
+    player.velocityY += gravity;
+    player.y += player.velocityY;
+
+    // Floor collision
+    if (player.y + player.height >= canvas.height) {
+      player.y = canvas.height - player.height;
+      player.velocityY = 0;
+      player.onGround = true;
+    } else {
+      player.onGround = false;
+    }
+
+    // Move obstacles
+    obstacles.forEach(ob => ob.x -= 5);
+
+    // Remove offscreen obstacles
+    if (obstacles.length && obstacles[0].x + obstacles[0].width < 0) {
+      obstacles.shift();
+    }
+
+    // Add obstacles
+    obstacleTimer++;
+    if (obstacleTimer > 90) {
+      createObstacle();
+      obstacleTimer = 0;
+    }
+
+    // Collision detection
+    obstacles.forEach(ob => {
+      if (
+        player.x < ob.x + ob.width &&
+        player.x + player.width > ob.x &&
+        player.y < ob.y + ob.height &&
+        player.y + player.height > ob.y
+      ) {
+        isGameOver = true;
+      }
+    });
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Draw player
+    ctx.fillStyle = player.color;
+    ctx.fillRect(player.x, player.y, player.width, player.height);
+
+    // Draw obstacles
+    obstacles.forEach(ob => {
+      ctx.fillStyle = ob.color;
+      ctx.fillRect(ob.x, ob.y, ob.width, ob.height);
+    });
+
+    // Game over
+    if (isGameOver) {
+      ctx.fillStyle = "#fff";
+      ctx.font = "48px sans-serif";
+      ctx.fillText("Game Over!", 280, 200);
+    }
+  }
+
+  function gameLoop() {
+    update();
+    draw();
+    requestAnimationFrame(gameLoop);
+  }
+
+  document.addEventListener('keydown', (e) => {
+    if (e.code === 'Space' && player.onGround && !isGameOver) {
+      player.velocityY = jumpStrength;
+    } else if (e.code === 'Space' && isGameOver) {
+      // Reset game
+      isGameOver = false;
+      player.y = 300;
+      player.velocityY = 0;
+      obstacles.length = 0;
+      obstacleTimer = 0;
+    }
+  });
+
+  gameLoop();
+</script>
+</body>
+</html>
